@@ -10,26 +10,27 @@ import UIKit
 
 class PlayingCardView: UIView {
     
-    var rank: Int = 5 { didSet { setNeedsDisplay(); setNeedsLayout() } } // update rank
+    var rank: Int = 11 { didSet { setNeedsDisplay(); setNeedsLayout() } } // update rank
     var suit: String = "♥️" { didSet { setNeedsDisplay(); setNeedsLayout() } }
     var isFaceUp: Bool = true { didSet { setNeedsDisplay(); setNeedsLayout() } }
+   
+    private var cornerString: NSAttributedString {
+        return centredAttributedString(rankString+"\n"+suit, fontSize:cornerFontSize)
+    }
+    
+    private lazy var upperLeftCornerLabel = createCornerLabel()
+    private lazy var loweRightCornerLabel = createCornerLabel()
+    
     
     private func centredAttributedString(_ string: String, fontSize: CGFloat) -> NSAttributedString { // custom string to display rank and suit of a card
         var font = UIFont.preferredFont(forTextStyle: .body).withSize(fontSize) // set body font style
         font = UIFontMetrics(forTextStyle: .body).scaledFont(for: font) // make it able to resize( scale from another font(basic))!
         let paragraphStyle = NSMutableParagraphStyle() // set mutble paragraph style
         paragraphStyle.alignment = .center // align items: center
-        
+           
         return NSAttributedString(string: string, attributes: [NSAttributedString.Key.paragraphStyle: paragraphStyle,.font:font])
-        
-    }
-    
-    private var centeredString: NSAttributedString {
-        return centredAttributedString(rankString+"\n"+suit, fontSize:cornerFontSize)
-    }
-    
-    private lazy var upperLeftCorner = createCornerLabel()
-    private lazy var loweRightCornerLabel = createCornerLabel()
+           
+       }
     
     private func createCornerLabel() -> UILabel {
         let label = UILabel()
@@ -38,39 +39,48 @@ class PlayingCardView: UIView {
         
         return label
     }
+    
+    private func configureCornerLabel(_ label: UILabel) {
+        label.attributedText = cornerString
+        label.frame.size = CGSize.zero
+        label.sizeToFit()
+        label.isHidden = !isFaceUp // hide face down card view
+    }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) { // checks if font size changes -> change rank & suit sizes as well
+        setNeedsDisplay()
+        setNeedsLayout()
+    }
+    
+    override func layoutSubviews() { // positioning responsible(setNeedsLayout calls -> layoutSubviews())
+        super.layoutSubviews()
+        
+        configureCornerLabel(upperLeftCornerLabel) // positioning upper left corner rank & suit view
+        upperLeftCornerLabel.frame.origin = bounds.origin.offsetBy(dx: cornerOffset, dy: cornerOffset)
+        
+        configureCornerLabel(loweRightCornerLabel) // positioning lower right corner rank & siut view
+        loweRightCornerLabel.transform = CGAffineTransform.identity.translatedBy(x: loweRightCornerLabel.frame.size.width, y: loweRightCornerLabel.frame.size.height).rotated(by: CGFloat.pi) //
+        loweRightCornerLabel.frame.origin = CGPoint(x: bounds.maxX, y: bounds.maxY)
+        .offsetBy(dx: -cornerOffset, dy: -cornerOffset)
+            .offsetBy(dx: -loweRightCornerLabel.frame.size.width, dy: -loweRightCornerLabel.frame.size.height)
 
-    override func draw(_ rect: CGRect) {
-// **************************************************************************************//
-        
-        // Drawing code(Cirlce)
-//        if let context = UIGraphicsGetCurrentContext() {
-//            context.addArc(center: CGPoint(x: bounds.midX, y: bounds.midY), radius: 100.0, startAngle: 0, endAngle: 2*CGFloat.pi, clockwise: true) // draw a crcl
-//
-//            context.setLineWidth(10.0) // crcl border width
-//            UIColor.green.setFill() // idk ?
-//            UIColor.black.setStroke() // crlc border clr
-//            context.strokePath() // paints the line along
-//            context.fillPath()  // fill the line wth clr
-//        }
-        
-//        let path = UIBezierPath() // USE Redraw in Storyboard Content mode to get a circle when device is turned
-//        path.addArc(withCenter: CGPoint(x:  bounds.midX, y: bounds.midY), radius: 100.0, startAngle: 0, endAngle: 2*CGFloat.pi, clockwise: true) // draw a crcl
-//        path.lineWidth = 5.0
-//        UIColor.green.setFill() // fill crcl wth clr
-//        UIColor.black.setStroke() // crlc border clr
-//        path.stroke()
-//        path.fill()
-        
-// **************************************************************************************//
-        
+    }
+
+    override func draw(_ rect: CGRect) { // setNeedsDisplay() calls -> draw()
         let roundedRect = UIBezierPath(roundedRect: bounds, cornerRadius: cornerRadius) // draw ROUNDED rect
         roundedRect.addClip() // func to draw only inside our rect
         UIColor.white.setFill() // fill rect wth clr
         roundedRect.fill()
+        
+        if let faceCardImage = UIImage(named: rankString+suit) { // place pic suit on card view from Assets
+            faceCardImage.draw(in: bounds.zoom(by: SizeRatio.faceCardImageSizeToBoundsSize))
+        }
     }
     
 
 }
+
+// some idk wtf is this extensions
 
 extension CGRect {
     var leftHalf: CGRect {
@@ -140,3 +150,4 @@ extension PlayingCardView {
         }
     }
 }
+// jk i know
